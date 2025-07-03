@@ -6,6 +6,7 @@
     </entity>
     <entity name="Habit" representedClassName="Habit" syncable="YES" codeGenerationType="class">
         <attribute name="createdDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="frequency" optional="YES" attributeType="String" defaultValueString="Daily"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <relationship name="completions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Completion" inverseName="habit" inverseEntity="Completion"/>
     </entity>
