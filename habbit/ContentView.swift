@@ -89,6 +89,11 @@ var body: some View {
                 .padding(.vertical, 16)
                 .background(Color(red: 0.08, green: 0.12, blue: 0.20))
                 
+                // Daily progress bar
+                DailyProgressBar(habits: Array(habits))
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
+                
                 // Habit list
                 List {
                     ForEach(habits) { habit in
@@ -152,6 +157,133 @@ private func saveContext() {
         print("Save error: \(error)")
     }
 }
+}
+
+// MARK: - Daily Progress Bar
+struct DailyProgressBar: View {
+    let habits: [Habit]
+    private let calendar = Calendar.current
+    
+    @State private var animationOffset: CGFloat = -50
+    @State private var barWidth: CGFloat = 0
+    
+    private var todaysHabits: [Habit] {
+        habits.filter { habit in
+            let frequency = HabitFrequency(rawValue: habit.frequency ?? "Daily") ?? .daily
+            return shouldHabitBeCompletedToday(habit: habit, frequency: frequency)
+        }
+    }
+    
+    private var completedTodayCount: Int {
+        todaysHabits.filter { habit in
+            guard let completions = habit.completions as? Set<Completion> else { return false }
+            return completions.contains { completion in
+                calendar.isDateInToday(completion.date ?? Date())
+            }
+        }.count
+    }
+    
+    private var progress: Double {
+        guard !todaysHabits.isEmpty else { return 0 }
+        return Double(completedTodayCount) / Double(todaysHabits.count)
+    }
+    
+    private var isComplete: Bool {
+        !todaysHabits.isEmpty && progress == 1.0
+    }
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                // Background track
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.white.opacity(0.1))
+                    .frame(height: 6)
+                
+                // Progress fill
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(progressGradient)
+                    .frame(width: max(0, CGFloat(progress) * geometry.size.width), height: 6)
+                    .animation(.easeInOut(duration: 0.3), value: completedTodayCount)
+                    .overlay(
+                        // Shine effect when complete
+                        isComplete ? 
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
+                                LinearGradient(
+                                    colors: [.clear, .white.opacity(0.3), .clear],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: 40)
+                            .offset(x: animationOffset)
+                        : nil
+                    )
+            }
+            .onAppear {
+                barWidth = geometry.size.width
+                if isComplete {
+                    startShineAnimation()
+                }
+            }
+            .onChange(of: progress) { _, newValue in
+                if newValue == 1.0 && !todaysHabits.isEmpty {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        startShineAnimation()
+                    }
+                }
+            }
+        }
+        .frame(height: 6)
+    }
+    
+    private var progressGradient: LinearGradient {
+        if isComplete {
+            return LinearGradient(
+                colors: [
+                    Color(red: 0.2, green: 0.8, blue: 0.2),  // Green
+                    Color(red: 0.4, green: 0.9, blue: 0.4),  // Light green
+                    Color(red: 0.6, green: 1.0, blue: 0.6)   // Bright green
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        } else {
+            return LinearGradient(
+                colors: [
+                    Color(red: 0.3, green: 0.6, blue: 1.0),  // Blue
+                    Color(red: 0.4, green: 0.8, blue: 1.0)   // Light blue
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        }
+    }
+    
+    private func startShineAnimation() {
+        animationOffset = -50
+        withAnimation(.easeInOut(duration: 1.5)) {
+            animationOffset = barWidth + 50
+        }
+    }
+    
+    private func shouldHabitBeCompletedToday(habit: Habit, frequency: HabitFrequency) -> Bool {
+        let today = Date()
+        guard let createdDate = habit.createdDate, today >= createdDate else { return false }
+        
+        switch frequency {
+        case .daily:
+            return true
+        case .weekly:
+            return true // For simplicity, show all weekly habits
+        case .monthly:
+            return true // For simplicity, show all monthly habits
+        case .weekdays:
+            let weekday = calendar.component(.weekday, from: today)
+            return weekday != 1 && weekday != 7 // Not Sunday (1) or Saturday (7)
+        }
+    }
 }
 
 // MARK: - Habit Row View
@@ -251,52 +383,51 @@ private func nextExpectedDate(from date: Date, frequency: HabitFrequency, backwa
 
 var body: some View {
     HStack {
-        Button(action: toggleCompletion) {
-            Image(systemName: isCompletedToday ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(isCompletedToday ? Color(red: 0.4, green: 0.8, blue: 1.0) : Color.gray.opacity(0.6))
-                .font(.title2)
-        }
-        
-        // Main content area - tappable for completion
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(habit.emoji ?? "📋")
-                    .font(.title3)
-                Text(habit.name ?? "Unknown Habit")
-                    .font(.headline)
-                    .foregroundColor(.white)
+        // Large completion area: checkbox + name + streak
+        HStack {
+            Button(action: toggleCompletion) {
+                Image(systemName: isCompletedToday ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(isCompletedToday ? Color(red: 0.4, green: 0.8, blue: 1.0) : Color.gray.opacity(0.6))
+                    .font(.title2)
             }
             
-            HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(habit.emoji ?? "📋")
+                        .font(.title3)
+                    Text(habit.name ?? "Unknown Habit")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                }
+                
                 Text("🔥 \(currentStreak) \(streakUnit) streak")
                     .font(.caption)
                     .foregroundColor(Color(red: 1.0, green: 0.6, blue: 0.2))
-                
-                Spacer()
-                
-                HStack(spacing: 4) {
-                    Image(systemName: frequencyIcon)
-                        .font(.caption2)
-                        .foregroundColor(Color(red: 0.4, green: 0.8, blue: 1.0))
-                    Text(habit.frequency ?? "Daily")
-                        .font(.caption2)
-                        .foregroundColor(Color(red: 0.4, green: 0.8, blue: 1.0))
-                }
             }
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            toggleCompletion()
+            toggleCompletion() // Mark/unmark habit
         }
         
         Spacer()
         
-        // Edit button - only the chevron is tappable for editing
+        // Frequency display (non-interactive)
+        HStack(spacing: 4) {
+            Image(systemName: frequencyIcon)
+                .font(.caption2)
+                .foregroundColor(Color(red: 0.4, green: 0.8, blue: 1.0))
+            Text(habit.frequency ?? "Daily")
+                .font(.caption2)
+                .foregroundColor(Color(red: 0.4, green: 0.8, blue: 1.0))
+        }
+        
+        // Edit button - only the chevron triggers editing
         Button(action: onTap) {
             Image(systemName: "chevron.right")
                 .foregroundColor(.gray.opacity(0.6))
                 .font(.caption)
-                .padding(.leading, 8) // Extra padding for easier tapping
+                .padding(.leading, 8)
         }
     }
 }
