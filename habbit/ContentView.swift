@@ -38,6 +38,57 @@ private var habits: FetchedResults<Habit>
 @State private var editingHabit: Habit? = nil
 @State private var isDarkMode = false
 @State private var editMode: EditMode = .inactive
+@State private var showCompletedTasks = false
+
+// Computed properties for habit categorization
+private var activeHabits: [Habit] {
+    habits.filter { habit in
+        !isCompletedToday(habit) && isDueToday(habit)
+    }
+}
+
+private var completedHabits: [Habit] {
+    habits.filter { habit in
+        isCompletedToday(habit)
+    }
+}
+
+private var upcomingHabits: [Habit] {
+    habits.filter { habit in
+        !isCompletedToday(habit) && !isDueToday(habit)
+    }
+}
+
+private func isCompletedToday(_ habit: Habit) -> Bool {
+    guard let completions = habit.completions as? Set<Completion> else { return false }
+    return completions.contains { completion in
+        Calendar.current.isDateInToday(completion.date ?? Date())
+    }
+}
+
+private func isDueToday(_ habit: Habit) -> Bool {
+    let frequency = HabitFrequency(rawValue: habit.frequency ?? "Daily") ?? .daily
+    let calendar = Calendar.current
+    let today = Date()
+    
+    switch frequency {
+    case .daily:
+        return true
+    case .weekdays:
+        let weekday = calendar.component(.weekday, from: today)
+        return weekday >= 2 && weekday <= 6 // Monday (2) to Friday (6)
+    case .weekly:
+        // Due every 7 days from creation date
+        guard let createdDate = habit.createdDate else { return true }
+        let daysSinceCreation = calendar.dateComponents([.day], from: createdDate, to: today).day ?? 0
+        return daysSinceCreation % 7 == 0
+    case .monthly:
+        // Due every 30 days from creation date
+        guard let createdDate = habit.createdDate else { return true }
+        let daysSinceCreation = calendar.dateComponents([.day], from: createdDate, to: today).day ?? 0
+        return daysSinceCreation % 30 == 0
+    }
+}
 
 var body: some View {
     NavigationView {
@@ -90,13 +141,14 @@ var body: some View {
                 .background(Color(red: 0.08, green: 0.12, blue: 0.20))
                 
                 // Daily progress bar
-                DailyProgressBar(habits: Array(habits))
+                DailyProgressBar(habits: Array(habits), isDueToday: isDueToday, isCompletedToday: isCompletedToday)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 8)
                 
                 // Habit list
                 List {
-                    ForEach(habits) { habit in
+                    // Active habits (not completed today)
+                    ForEach(activeHabits) { habit in
                         HabitRowView(habit: habit) {
                             editingHabit = habit
                         }
@@ -104,6 +156,60 @@ var body: some View {
                     }
                     .onDelete(perform: deleteHabits)
                     .onMove(perform: editMode == .active ? moveHabits : nil)
+                    
+                    // Completed tasks section
+                    if !completedHabits.isEmpty {
+                        Section {
+                            Button(action: {
+                                withAnimation {
+                                    showCompletedTasks.toggle()
+                                }
+                            }) {
+                                HStack {
+                                    Text("Completed Today (\(completedHabits.count))")
+                                        .foregroundColor(.white.opacity(0.8))
+                                        .font(.headline)
+                                    Spacer()
+                                    Image(systemName: showCompletedTasks ? "chevron.up" : "chevron.down")
+                                        .foregroundColor(.white.opacity(0.8))
+                                        .font(.caption)
+                                }
+                                .padding(.vertical, 8)
+                            }
+                            .listRowBackground(Color(red: 0.08, green: 0.12, blue: 0.20))
+                            
+                            if showCompletedTasks {
+                                ForEach(completedHabits) { habit in
+                                    HabitRowView(habit: habit) {
+                                        editingHabit = habit
+                                    }
+                                    .listRowBackground(Color(red: 0.10, green: 0.14, blue: 0.22).opacity(0.7))
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Upcoming tasks section (not due today)
+                    if !upcomingHabits.isEmpty {
+                        Section {
+                            HStack {
+                                Text("Upcoming (\(upcomingHabits.count))")
+                                    .foregroundColor(.white.opacity(0.6))
+                                    .font(.subheadline)
+                                Spacer()
+                            }
+                            .padding(.vertical, 4)
+                            .listRowBackground(Color(red: 0.08, green: 0.12, blue: 0.20))
+                            
+                            ForEach(upcomingHabits) { habit in
+                                HabitRowView(habit: habit) {
+                                    editingHabit = habit
+                                }
+                                .listRowBackground(Color(red: 0.10, green: 0.14, blue: 0.22).opacity(0.5))
+                                .disabled(true) // Disable interaction for upcoming tasks
+                            }
+                        }
+                    }
                 }
                 .environment(\.editMode, $editMode)
                 .listStyle(PlainListStyle())
@@ -162,6 +268,8 @@ private func saveContext() {
 // MARK: - Daily Progress Bar
 struct DailyProgressBar: View {
     let habits: [Habit]
+    let isDueToday: (Habit) -> Bool
+    let isCompletedToday: (Habit) -> Bool
     private let calendar = Calendar.current
     
     @State private var animationOffset: CGFloat = -50
@@ -169,17 +277,13 @@ struct DailyProgressBar: View {
     
     private var todaysHabits: [Habit] {
         habits.filter { habit in
-            let frequency = HabitFrequency(rawValue: habit.frequency ?? "Daily") ?? .daily
-            return shouldHabitBeCompletedToday(habit: habit, frequency: frequency)
+            isDueToday(habit)
         }
     }
     
     private var completedTodayCount: Int {
         todaysHabits.filter { habit in
-            guard let completions = habit.completions as? Set<Completion> else { return false }
-            return completions.contains { completion in
-                calendar.isDateInToday(completion.date ?? Date())
-            }
+            isCompletedToday(habit)
         }.count
     }
     
@@ -268,22 +372,6 @@ struct DailyProgressBar: View {
         }
     }
     
-    private func shouldHabitBeCompletedToday(habit: Habit, frequency: HabitFrequency) -> Bool {
-        let today = Date()
-        guard let createdDate = habit.createdDate, today >= createdDate else { return false }
-        
-        switch frequency {
-        case .daily:
-            return true
-        case .weekly:
-            return true // For simplicity, show all weekly habits
-        case .monthly:
-            return true // For simplicity, show all monthly habits
-        case .weekdays:
-            let weekday = calendar.component(.weekday, from: today)
-            return weekday != 1 && weekday != 7 // Not Sunday (1) or Saturday (7)
-        }
-    }
 }
 
 // MARK: - Habit Row View
