@@ -39,6 +39,7 @@ var body: some View {
             .onMove(perform: editMode == .active ? moveHabits : nil)
         }
         .environment(\.editMode, $editMode)
+        .listStyle(PlainListStyle()) // Makes dragging feel more responsive
         .navigationTitle("Habits")
         .preferredColorScheme(isDarkMode ? .dark : .light)
         .toolbar {
@@ -50,10 +51,17 @@ var body: some View {
                     
                     Button(action: {
                         withAnimation {
+                            if editMode == .inactive {
+                                // Haptic feedback when entering edit mode
+                                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                impactFeedback.prepare()
+                                impactFeedback.impactOccurred()
+                            }
                             editMode = editMode == .active ? .inactive : .active
                         }
                     }) {
-                        Image(systemName: "line.3.horizontal")
+                        Image(systemName: editMode == .active ? "checkmark" : "line.3.horizontal")
+                            .foregroundColor(editMode == .active ? .green : .primary)
                     }
                 }
             }
@@ -79,6 +87,11 @@ private func deleteHabits(offsets: IndexSet) {
 
 private func moveHabits(from source: IndexSet, to destination: Int) {
     withAnimation {
+        // Haptic feedback when moving items
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.prepare()
+        impactFeedback.impactOccurred()
+        
         var habitsArray = Array(habits)
         habitsArray.move(fromOffsets: source, toOffset: destination)
         
@@ -104,7 +117,6 @@ private func saveContext() {
 struct HabitRowView: View {
 @ObservedObject var habit: Habit
 @Environment(\.managedObjectContext) private var viewContext
-@State private var showingEditSheet = false
 
 private var isCompletedToday: Bool {
     guard let completions = habit.completions as? Set<Completion> else { return false }
@@ -132,24 +144,25 @@ private var currentStreak: Int {
     
     return streak
 }
-
-private var streakUnit: String {
-    let frequency = HabitFrequency(rawValue: habit.frequency ?? "Daily") ?? .daily
-    switch frequency {
-    case .daily, .weekdays:
-        return "day"
-    case .weekly:
-        return "week"
-    case .monthly:
-        return "month"
-    }
-}
-
-private var frequencyIcon: String {
-    let frequency = HabitFrequency(rawValue: habit.frequency ?? "Daily") ?? .daily
-    return frequency.systemImage
-}
     
+    private var streakUnit: String {
+        let frequency = HabitFrequency(rawValue: habit.frequency ?? "Daily") ?? .daily
+        switch frequency {
+        case .daily, .weekdays:
+            return "day"
+        case .weekly:
+            return "week"
+        case .monthly:
+            return "month"
+        }
+    }
+
+    private var frequencyIcon: String {
+        let frequency = HabitFrequency(rawValue: habit.frequency ?? "Daily") ?? .daily
+        return frequency.systemImage
+    }// MARK: - App Entry Point
+
+
 private func shouldCountForStreak(date: Date, currentDate: Date, frequency: HabitFrequency) -> Bool {
     let calendar = Calendar.current
     
@@ -231,16 +244,15 @@ var body: some View {
         Spacer()
     }
     .contentShape(Rectangle())
-    .onLongPressGesture {
-        showingEditSheet = true
-    }
-    .sheet(isPresented: $showingEditSheet) {
-        EditHabitView(habit: habit)
-    }
 }
 
 private func toggleCompletion() {
     withAnimation {
+        // Light haptic feedback for completion toggle
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.prepare()
+        impactFeedback.impactOccurred()
+        
         if isCompletedToday {
             // Remove today's completion
             if let completions = habit.completions as? Set<Completion> {
@@ -287,6 +299,8 @@ var body: some View {
         Form {
             Section(header: Text("Habit Details")) {
                 TextField("Habit Name", text: $habitName)
+                    .frame(minHeight: 44) // Minimum tap target size
+                    .padding(.vertical, 8) // Extra padding for easier tapping
             }
             
             Section(header: Text("Choose an Emoji")) {
@@ -294,9 +308,9 @@ var body: some View {
                     ForEach(emojis, id: \.self) { emoji in
                         Text(emoji)
                             .font(.title2)
-                            .frame(width: 44, height: 44)
+                            .frame(width: 60, height: 60) // Increased from 44x44
                             .background(selectedEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
-                            .cornerRadius(8)
+                            .cornerRadius(12) // Slightly larger corner radius
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 selectedEmoji = emoji
@@ -414,6 +428,8 @@ var body: some View {
         Form {
             Section(header: Text("Habit Details")) {
                 TextField("Habit Name", text: $editedName)
+                    .frame(minHeight: 44) // Minimum tap target size
+                    .padding(.vertical, 8) // Extra padding for easier tapping
             }
             
             Section(header: Text("Choose an Emoji")) {
@@ -421,9 +437,9 @@ var body: some View {
                     ForEach(emojis, id: \.self) { emoji in
                         Text(emoji)
                             .font(.title2)
-                            .frame(width: 44, height: 44)
+                            .frame(width: 60, height: 60) // Increased from 44x44
                             .background(editedEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
-                            .cornerRadius(8)
+                            .cornerRadius(12) // Slightly larger corner radius
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 editedEmoji = emoji
