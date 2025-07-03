@@ -31,47 +31,64 @@ private var habits: FetchedResults<Habit>
 
 var body: some View {
     NavigationView {
-        List {
-            ForEach(habits) { habit in
-                HabitRowView(habit: habit)
-            }
-            .onDelete(perform: deleteHabits)
-            .onMove(perform: editMode == .active ? moveHabits : nil)
-        }
-        .environment(\.editMode, $editMode)
-        .listStyle(PlainListStyle()) // Makes dragging feel more responsive
-        .navigationTitle("Habits")
-        .preferredColorScheme(isDarkMode ? .dark : .light)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                HStack {
-                    Button(action: { isDarkMode.toggle() }) {
-                        Image(systemName: isDarkMode ? "sun.max" : "moon")
-                    }
-                    
-                    Button(action: {
-                        withAnimation {
-                            if editMode == .inactive {
-                                // Haptic feedback when entering edit mode
-                                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                                impactFeedback.prepare()
-                                impactFeedback.impactOccurred()
-                            }
-                            editMode = editMode == .active ? .inactive : .active
-                        }
-                    }) {
-                        Image(systemName: editMode == .active ? "checkmark" : "line.3.horizontal")
-                            .foregroundColor(editMode == .active ? .green : .primary)
-                    }
-                }
-            }
+        ZStack {
+            // Dark blue background similar to Copilot
+            Color(red: 0.08, green: 0.12, blue: 0.20)
+                .ignoresSafeArea()
             
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showingAddHabit = true }) {
-                    Image(systemName: "plus")
+            VStack(spacing: 0) {
+                // Custom header
+                HStack {
+                    Text("Habbit")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    HStack(spacing: 16) {
+                        Button(action: {
+                            withAnimation {
+                                if editMode == .inactive {
+                                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                    impactFeedback.prepare()
+                                    impactFeedback.impactOccurred()
+                                }
+                                editMode = editMode == .active ? .inactive : .active
+                            }
+                        }) {
+                            Image(systemName: editMode == .active ? "checkmark" : "line.3.horizontal")
+                                .foregroundColor(editMode == .active ? Color(red: 0.4, green: 0.8, blue: 1.0) : .white)
+                                .font(.title3)
+                        }
+                        
+                        Button(action: { showingAddHabit = true }) {
+                            Image(systemName: "plus")
+                                .foregroundColor(.white)
+                                .font(.title3)
+                        }
+                    }
                 }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(Color(red: 0.08, green: 0.12, blue: 0.20))
+                
+                // Habit list
+                List {
+                    ForEach(habits) { habit in
+                        HabitRowView(habit: habit)
+                            .listRowBackground(Color(red: 0.10, green: 0.14, blue: 0.22))
+                    }
+                    .onDelete(perform: deleteHabits)
+                    .onMove(perform: editMode == .active ? moveHabits : nil)
+                }
+                .environment(\.editMode, $editMode)
+                .listStyle(PlainListStyle())
+                .scrollContentBackground(.hidden)
+                .background(Color(red: 0.08, green: 0.12, blue: 0.20))
             }
         }
+        .navigationBarHidden(true)
         .sheet(isPresented: $showingAddHabit) {
             AddHabitView()
         }
@@ -211,7 +228,7 @@ var body: some View {
     HStack {
         Button(action: toggleCompletion) {
             Image(systemName: isCompletedToday ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(isCompletedToday ? .green : .gray)
+                .foregroundColor(isCompletedToday ? Color(red: 0.4, green: 0.8, blue: 1.0) : Color.gray.opacity(0.6))
                 .font(.title2)
         }
         
@@ -221,22 +238,23 @@ var body: some View {
                     .font(.title3)
                 Text(habit.name ?? "Unknown Habit")
                     .font(.headline)
+                    .foregroundColor(.white)
             }
             
             HStack {
                 Text("🔥 \(currentStreak) \(streakUnit) streak")
                     .font(.caption)
-                    .foregroundColor(.orange)
+                    .foregroundColor(Color(red: 1.0, green: 0.6, blue: 0.2))
                 
                 Spacer()
                 
                 HStack(spacing: 4) {
                     Image(systemName: frequencyIcon)
                         .font(.caption2)
-                        .foregroundColor(.blue)
+                        .foregroundColor(Color(red: 0.4, green: 0.8, blue: 1.0))
                     Text(habit.frequency ?? "Daily")
                         .font(.caption2)
-                        .foregroundColor(.blue)
+                        .foregroundColor(Color(red: 0.4, green: 0.8, blue: 1.0))
                 }
             }
         }
