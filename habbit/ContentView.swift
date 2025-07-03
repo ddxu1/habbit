@@ -1,6 +1,14 @@
 import SwiftUI
 import CoreData
 
+// MARK: - Extensions
+extension Character {
+    var isEmoji: Bool {
+        guard let scalar = unicodeScalars.first else { return false }
+        return scalar.properties.isEmoji && (scalar.value >= 0x238d || unicodeScalars.count > 1)
+    }
+}
+
 // MARK: - Frequency Enum
 enum HabitFrequency: String, CaseIterable {
 case daily = "Daily"
@@ -26,6 +34,7 @@ struct ContentView: View {
 private var habits: FetchedResults<Habit>
 
 @State private var showingAddHabit = false
+@State private var showingHeatMap = false
 @State private var isDarkMode = false
 @State private var editMode: EditMode = .inactive
 
@@ -39,7 +48,7 @@ var body: some View {
             VStack(spacing: 0) {
                 // Custom header
                 HStack {
-                    Text("Habbit")
+                    Text("Stride")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
@@ -47,6 +56,12 @@ var body: some View {
                     Spacer()
                     
                     HStack(spacing: 16) {
+                        Button(action: { showingHeatMap = true }) {
+                            Image(systemName: "chart.dots.scatter")
+                                .foregroundColor(.white)
+                                .font(.title3)
+                        }
+                        
                         Button(action: {
                             withAnimation {
                                 if editMode == .inactive {
@@ -91,6 +106,9 @@ var body: some View {
         .navigationBarHidden(true)
         .sheet(isPresented: $showingAddHabit) {
             AddHabitView()
+        }
+        .sheet(isPresented: $showingHeatMap) {
+            HeatMapView()
         }
     }
 }
@@ -309,8 +327,10 @@ struct AddHabitView: View {
 @State private var habitName = ""
 @State private var selectedFrequency: HabitFrequency = .daily
 @State private var selectedEmoji = "📋"
+@State private var customEmoji = ""
+@State private var showingCustomEmojiInput = false
 
-private let emojis = ["📋", "💧", "🏃‍♂️", "📚", "💪", "🧘‍♂️", "🥗", "😴", "🚶‍♂️", "📱", "🎯", "✍️", "🎵", "🌱", "☀️", "🏠", "💼", "🎨", "🔥", "⭐"]
+private let popularEmojis = ["📋", "💧", "🏃‍♂️", "📚", "💪", "🧘‍♂️", "🥗", "😴", "🚶‍♂️", "📱", "🎯", "✍️", "🎵", "🌱", "☀️", "🏠", "💼", "🎨", "🔥", "⭐"]
 
 var body: some View {
     NavigationView {
@@ -322,18 +342,85 @@ var body: some View {
             }
             
             Section(header: Text("Choose an Emoji")) {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 16) {
-                    ForEach(emojis, id: \.self) { emoji in
-                        Text(emoji)
-                            .font(.title2)
-                            .frame(width: 60, height: 60) // Increased from 44x44
-                            .background(selectedEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
-                            .cornerRadius(12) // Slightly larger corner radius
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                selectedEmoji = emoji
-                                print("Selected emoji: \(emoji)") // Debug
+                VStack(alignment: .leading, spacing: 12) {
+                    // Horizontal scrollable emoji slider
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(popularEmojis, id: \.self) { emoji in
+                                Text(emoji)
+                                    .font(.title2)
+                                    .frame(width: 50, height: 50)
+                                    .background(selectedEmoji == emoji ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
+                                    .cornerRadius(10)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        selectedEmoji = emoji
+                                        showingCustomEmojiInput = false
+                                    }
                             }
+                        }
+                        .padding(.horizontal, 4)
+                    }
+                    
+                    // Custom emoji option
+                    HStack {
+                        Text("Or use your own:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Button(action: {
+                            showingCustomEmojiInput = true
+                            customEmoji = "" // Clear the field when starting fresh
+                        }) {
+                            HStack {
+                                Text(showingCustomEmojiInput && !customEmoji.isEmpty ? customEmoji : "😀")
+                                    .font(.title3)
+                                Text("Tap to choose")
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(showingCustomEmojiInput ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                    }
+                    
+                    // Custom emoji text field (appears when button is tapped)
+                    if showingCustomEmojiInput {
+                        HStack {
+                            TextField("🎨", text: $customEmoji)
+                                .font(.title2)
+                                .multilineTextAlignment(.center)
+                                .frame(height: 44)
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                )
+                                .onChange(of: customEmoji) { _, newValue in
+                                    // Validate and filter to only allow emojis, limit to 1
+                                    let filtered = newValue.filter { $0.isEmoji }
+                                    if filtered != newValue {
+                                        customEmoji = filtered
+                                    }
+                                    // Only allow one emoji
+                                    if filtered.count > 1 {
+                                        customEmoji = String(filtered.prefix(1))
+                                    }
+                                    if !customEmoji.isEmpty {
+                                        selectedEmoji = customEmoji
+                                    }
+                                }
+                            
+                            Button("Clear") {
+                                customEmoji = ""
+                                showingCustomEmojiInput = false
+                            }
+                            .font(.caption)
+                            .foregroundColor(.red)
+                        }
                     }
                 }
                 .padding(.vertical, 8)
@@ -431,8 +518,10 @@ struct EditHabitView: View {
 @State private var editedName: String
 @State private var editedFrequency: HabitFrequency
 @State private var editedEmoji: String
+@State private var customEmoji = ""
+@State private var showingCustomEmojiInput = false
 
-private let emojis = ["📋", "💧", "🏃‍♂️", "📚", "💪", "🧘‍♂️", "🥗", "😴", "🚶‍♂️", "📱", "🎯", "✍️", "🎵", "🌱", "☀️", "🏠", "💼", "🎨", "🔥", "⭐"]
+private let popularEmojis = ["📋", "💧", "🏃‍♂️", "📚", "💪", "🧘‍♂️", "🥗", "😴", "🚶‍♂️", "📱", "🎯", "✍️", "🎵", "🌱", "☀️", "🏠", "💼", "🎨", "🔥", "⭐"]
 
 init(habit: Habit) {
     self.habit = habit
@@ -451,17 +540,85 @@ var body: some View {
             }
             
             Section(header: Text("Choose an Emoji")) {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 16) {
-                    ForEach(emojis, id: \.self) { emoji in
-                        Text(emoji)
-                            .font(.title2)
-                            .frame(width: 60, height: 60) // Increased from 44x44
-                            .background(editedEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
-                            .cornerRadius(12) // Slightly larger corner radius
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                editedEmoji = emoji
+                VStack(alignment: .leading, spacing: 12) {
+                    // Horizontal scrollable emoji slider
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(popularEmojis, id: \.self) { emoji in
+                                Text(emoji)
+                                    .font(.title2)
+                                    .frame(width: 50, height: 50)
+                                    .background(editedEmoji == emoji ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
+                                    .cornerRadius(10)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        editedEmoji = emoji
+                                        showingCustomEmojiInput = false
+                                    }
                             }
+                        }
+                        .padding(.horizontal, 4)
+                    }
+                    
+                    // Custom emoji option
+                    HStack {
+                        Text("Or use your own:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Button(action: {
+                            showingCustomEmojiInput = true
+                            customEmoji = "" // Clear the field when starting fresh
+                        }) {
+                            HStack {
+                                Text(showingCustomEmojiInput && !customEmoji.isEmpty ? customEmoji : "😀")
+                                    .font(.title3)
+                                Text("Tap to choose")
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(showingCustomEmojiInput ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                    }
+                    
+                    // Custom emoji text field (appears when button is tapped)
+                    if showingCustomEmojiInput {
+                        HStack {
+                            TextField("🎨", text: $customEmoji)
+                                .font(.title2)
+                                .multilineTextAlignment(.center)
+                                .frame(height: 44)
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                )
+                                .onChange(of: customEmoji) { _, newValue in
+                                    // Validate and filter to only allow emojis, limit to 1
+                                    let filtered = newValue.filter { $0.isEmoji }
+                                    if filtered != newValue {
+                                        customEmoji = filtered
+                                    }
+                                    // Only allow one emoji
+                                    if filtered.count > 1 {
+                                        customEmoji = String(filtered.prefix(1))
+                                    }
+                                    if !customEmoji.isEmpty {
+                                        editedEmoji = customEmoji
+                                    }
+                                }
+                            
+                            Button("Clear") {
+                                customEmoji = ""
+                                showingCustomEmojiInput = false
+                            }
+                            .font(.caption)
+                            .foregroundColor(.red)
+                        }
                     }
                 }
                 .padding(.vertical, 8)
@@ -580,6 +737,411 @@ static var example: Completion {
     completion.date = Date()
     return completion
 }
+}
+
+// MARK: - Heat Map Time Period
+enum HeatMapPeriod: String, CaseIterable {
+    case week = "Week"
+    case month = "Month"
+    case quarter = "90 Days" 
+    case year = "Year"
+    
+    var dayCount: Int {
+        switch self {
+        case .week: return 7
+        case .month: return 30
+        case .quarter: return 90
+        case .year: return 365
+        }
+    }
+    
+    var gridColumns: Int {
+        switch self {
+        case .week: return 7
+        case .month: return 10 // 3 rows of ~10 days each
+        case .quarter: return 15 // 6 rows of ~15 days each  
+        case .year: return 26 // ~14 rows of 26 days each (taller layout)
+        }
+    }
+}
+
+// MARK: - Heat Map View
+struct HeatMapView: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.dismiss) private var dismiss
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Habit.sortOrder, ascending: true)],
+        animation: .default)
+    private var habits: FetchedResults<Habit>
+    
+    @State private var selectedPeriod: HeatMapPeriod = .quarter
+    @State private var currentOffset: Int = 0 // 0 = most recent period, 1 = one period back, etc.
+    
+    private let calendar = Calendar.current
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter
+    }()
+    
+    // Get date range based on selected period and offset
+    private var dateRange: [Date] {
+        let today = Date()
+        let offsetDays = currentOffset * selectedPeriod.dayCount
+        let endDate = calendar.date(byAdding: .day, value: -offsetDays, to: today) ?? today
+        let startDate = calendar.date(byAdding: .day, value: -(selectedPeriod.dayCount - 1), to: endDate) ?? endDate
+        
+        var dates: [Date] = []
+        var currentDate = startDate
+        
+        while currentDate <= endDate {
+            dates.append(currentDate)
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+        }
+        
+        return dates
+    }
+    
+    // Get formatted date range string
+    private var dateRangeString: String {
+        guard let startDate = dateRange.first, let endDate = dateRange.last else { return "" }
+        
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        
+        if calendar.isDate(startDate, equalTo: endDate, toGranularity: .year) {
+            // Same year
+            let startFormatter = DateFormatter()
+            startFormatter.dateFormat = "MMM d"
+            let endFormatter = DateFormatter()
+            endFormatter.dateFormat = "MMM d, yyyy"
+            return "\(startFormatter.string(from: startDate)) - \(endFormatter.string(from: endDate))"
+        } else {
+            // Different years
+            let startFormatter = DateFormatter()
+            startFormatter.dateFormat = "MMM d, yyyy"
+            let endFormatter = DateFormatter()
+            endFormatter.dateFormat = "MMM d, yyyy"
+            return "\(startFormatter.string(from: startDate)) - \(endFormatter.string(from: endDate))"
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color(red: 0.08, green: 0.12, blue: 0.20)
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    // Custom header
+                    HStack {
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "chevron.left")
+                                .foregroundColor(.white)
+                                .font(.title3)
+                        }
+                        
+                        Text("Heat Map")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 20) {
+                            // Period selector
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Time Period")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                
+                                HStack(spacing: 8) {
+                                    ForEach(HeatMapPeriod.allCases, id: \.self) { period in
+                                        Button(action: {
+                                            withAnimation(.easeInOut(duration: 0.3)) {
+                                                selectedPeriod = period
+                                                currentOffset = 0 // Reset to current period when changing views
+                                            }
+                                        }) {
+                                            Text(period.rawValue)
+                                                .font(.caption)
+                                                .fontWeight(.medium)
+                                                .foregroundColor(selectedPeriod == period ? .white : Color.gray)
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 6)
+                                                .background(selectedPeriod == period ? Color(red: 0.4, green: 0.8, blue: 1.0) : Color(red: 0.15, green: 0.20, blue: 0.30))
+                                                .cornerRadius(8)
+                                        }
+                                    }
+                                    Spacer()
+                                }
+                            }
+                            
+                            // Date range and navigation
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Button(action: {
+                                        withAnimation(.easeInOut(duration: 0.3)) {
+                                            currentOffset += 1
+                                        }
+                                    }) {
+                                        Image(systemName: "chevron.left")
+                                            .foregroundColor(Color(red: 0.4, green: 0.8, blue: 1.0))
+                                            .font(.title3)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    VStack(spacing: 2) {
+                                        Text(dateRangeString)
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.white)
+                                        
+                                        if currentOffset > 0 {
+                                            Text("\(currentOffset) period\(currentOffset == 1 ? "" : "s") ago")
+                                                .font(.caption2)
+                                                .foregroundColor(.gray)
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Button(action: {
+                                        withAnimation(.easeInOut(duration: 0.3)) {
+                                            if currentOffset > 0 {
+                                                currentOffset -= 1
+                                            }
+                                        }
+                                    }) {
+                                        Image(systemName: "chevron.right")
+                                            .foregroundColor(currentOffset > 0 ? Color(red: 0.4, green: 0.8, blue: 1.0) : .gray)
+                                            .font(.title3)
+                                    }
+                                    .disabled(currentOffset == 0)
+                                }
+                            }
+                            
+                            // Legend
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Daily Completion Rate")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                
+                                HStack(spacing: 8) {
+                                    Text("Less")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                    
+                                    ForEach(0..<5) { intensity in
+                                        Rectangle()
+                                            .fill(colorForCompletion(Double(intensity) / 4.0))
+                                            .frame(width: 12, height: 12)
+                                            .cornerRadius(2)
+                                    }
+                                    
+                                    Text("More")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                            
+                            // Heat map grid
+                            let columns = Array(repeating: GridItem(.flexible(), spacing: selectedPeriod == .year ? 1 : 2), count: selectedPeriod.gridColumns)
+                            
+                            LazyVGrid(columns: columns, spacing: selectedPeriod == .year ? 1 : 2) {
+                                ForEach(dateRange, id: \.self) { date in
+                                    let completionRate = getCompletionRate(for: date)
+                                    
+                                    Rectangle()
+                                        .fill(colorForCompletion(completionRate))
+                                        .frame(height: getSquareHeight())
+                                        .cornerRadius(selectedPeriod == .year ? 1 : 2)
+                                        .overlay(
+                                            Text(getDateLabel(for: date))
+                                                .font(.system(size: getFontSize()))
+                                                .foregroundColor(.white.opacity(0.8))
+                                                .minimumScaleFactor(0.5)
+                                        )
+                                }
+                            }
+                            .padding(.horizontal, 4)
+                            
+                            // Summary stats
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("\(selectedPeriod.rawValue) Summary")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                
+                                let stats = getHeatMapStats()
+                                
+                                HStack(spacing: 12) {
+                                    StatCardView(title: "Perfect Days", value: "\(stats.perfectDays)", subtitle: "100% completion")
+                                    StatCardView(title: "Active Days", value: "\(stats.activeDays)", subtitle: "Any habits done")
+                                }
+                                
+                                HStack(spacing: 12) {
+                                    StatCardView(title: "Average Rate", value: "\(Int(stats.averageRate * 100))%", subtitle: "Daily completion")
+                                    StatCardView(title: "Best Streak", value: "\(stats.longestStreak)", subtitle: "Consecutive days")
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
+                    }
+                }
+            }
+            .navigationBarHidden(true)
+        }
+    }
+    
+    private func getCompletionRate(for date: Date) -> Double {
+        let dailyHabits = habits.filter { habit in
+            let frequency = HabitFrequency(rawValue: habit.frequency ?? "Daily") ?? .daily
+            return shouldHabitBeCompletedOn(habit: habit, date: date, frequency: frequency)
+        }
+        
+        guard !dailyHabits.isEmpty else { return 0 }
+        
+        let completedHabits = dailyHabits.filter { habit in
+            guard let completions = habit.completions as? Set<Completion> else { return false }
+            return completions.contains { completion in
+                calendar.isDate(completion.date ?? Date(), inSameDayAs: date)
+            }
+        }
+        
+        return Double(completedHabits.count) / Double(dailyHabits.count)
+    }
+    
+    private func shouldHabitBeCompletedOn(habit: Habit, date: Date, frequency: HabitFrequency) -> Bool {
+        // Only count habits that existed on this date
+        guard let createdDate = habit.createdDate, date >= createdDate else { return false }
+        
+        switch frequency {
+        case .daily:
+            return true
+        case .weekly:
+            // For weekly habits, we'll count them on all days for simplicity
+            return true
+        case .monthly:
+            // For monthly habits, we'll count them on all days for simplicity
+            return true
+        case .weekdays:
+            let weekday = calendar.component(.weekday, from: date)
+            return weekday != 1 && weekday != 7 // Not Sunday (1) or Saturday (7)
+        }
+    }
+    
+    private func colorForCompletion(_ rate: Double) -> Color {
+        if rate == 0 {
+            return Color(red: 0.15, green: 0.20, blue: 0.30) // Dark blue for no completion
+        } else if rate < 0.25 {
+            return Color(red: 0.2, green: 0.4, blue: 0.8).opacity(0.3) // Light blue
+        } else if rate < 0.5 {
+            return Color(red: 0.2, green: 0.4, blue: 0.8).opacity(0.5) // Medium light blue
+        } else if rate < 0.75 {
+            return Color(red: 0.2, green: 0.4, blue: 0.8).opacity(0.7) // Medium blue
+        } else if rate < 1.0 {
+            return Color(red: 0.2, green: 0.4, blue: 0.8).opacity(0.9) // Dark blue
+        } else {
+            return Color(red: 0.1, green: 0.3, blue: 0.9) // Brightest blue for 100%
+        }
+    }
+    
+    private func getHeatMapStats() -> (perfectDays: Int, activeDays: Int, averageRate: Double, longestStreak: Int) {
+        var perfectDays = 0
+        var activeDays = 0
+        var totalRate = 0.0
+        var longestStreak = 0
+        var currentStreak = 0
+        
+        for date in dateRange {
+            let rate = getCompletionRate(for: date)
+            totalRate += rate
+            
+            if rate == 1.0 {
+                perfectDays += 1
+                currentStreak += 1
+                longestStreak = max(longestStreak, currentStreak)
+            } else {
+                currentStreak = 0
+            }
+            
+            if rate > 0 {
+                activeDays += 1
+            }
+        }
+        
+        let averageRate = dateRange.isEmpty ? 0 : totalRate / Double(dateRange.count)
+        
+        return (perfectDays, activeDays, averageRate, longestStreak)
+    }
+    
+    private func getSquareHeight() -> CGFloat {
+        switch selectedPeriod {
+        case .week: return 24
+        case .month: return 18
+        case .quarter: return 12
+        case .year: return 10
+        }
+    }
+    
+    private func getFontSize() -> CGFloat {
+        switch selectedPeriod {
+        case .week: return 10
+        case .month: return 8
+        case .quarter: return 7
+        case .year: return 6
+        }
+    }
+    
+    private func getDateLabel(for date: Date) -> String {
+        let day = calendar.component(.day, from: date)
+        
+        switch selectedPeriod {
+        case .week:
+            let formatter = DateFormatter()
+            formatter.dateFormat = "E" // Mon, Tue, etc.
+            return formatter.string(from: date)
+        case .month:
+            return "\(day)" // Show day number
+        case .quarter:
+            return "\(day)" // Show day number
+        case .year:
+            return "" // No numbers for year view
+        }
+    }
+}
+
+// MARK: - Stat Card View
+struct StatCardView: View {
+    let title: String
+    let value: String
+    let subtitle: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(value)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(Color(red: 0.4, green: 0.8, blue: 1.0))
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.white)
+            
+            Text(subtitle)
+                .font(.caption2)
+                .foregroundColor(.gray)
+        }
+        .padding(12)
+        .background(Color(red: 0.10, green: 0.14, blue: 0.22))
+        .cornerRadius(8)
+    }
 }
 
 // MARK: - Preview
