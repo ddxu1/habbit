@@ -14,10 +14,27 @@ struct PersistenceController {
     static let preview: PersistenceController = {
         let result = PersistenceController(inMemory: true)
         let viewContext = result.container.viewContext
-        for _ in 0..<10 {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
+        
+        // Create sample habits for previews
+        let habit1 = Habit(context: viewContext)
+        habit1.name = "Drink Water"
+        habit1.createdDate = Date()
+        
+        let habit2 = Habit(context: viewContext)
+        habit2.name = "Exercise"
+        habit2.createdDate = Calendar.current.date(byAdding: .day, value: -5, to: Date())
+        
+        let habit3 = Habit(context: viewContext)
+        habit3.name = "Read"
+        habit3.createdDate = Calendar.current.date(byAdding: .day, value: -10, to: Date())
+        
+        // Add some sample completions for habit2 to show streaks
+        for i in 0..<3 {
+            let completion = Completion(context: viewContext)
+            completion.date = Calendar.current.date(byAdding: .day, value: -i, to: Date())
+            completion.habit = habit2
         }
+        
         do {
             try viewContext.save()
         } catch {
