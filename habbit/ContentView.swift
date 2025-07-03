@@ -338,8 +338,9 @@ var body: some View {
         Form {
             Section(header: Text("Habit Details")) {
                 TextField("Habit Name", text: $habitName)
-                    .frame(minHeight: 44) // Minimum tap target size
-                    .padding(.vertical, 8) // Extra padding for easier tapping
+                    .padding(.vertical, 12) // Increase tap margin
+                    .padding(.horizontal, 4) // Small horizontal padding
+                    .contentShape(Rectangle()) // Extend tap area to full width
             }
             
             Section(header: Text("Choose an Emoji")) {
@@ -538,8 +539,9 @@ var body: some View {
         Form {
             Section(header: Text("Habit Details")) {
                 TextField("Habit Name", text: $editedName)
-                    .frame(minHeight: 44) // Minimum tap target size
-                    .padding(.vertical, 8) // Extra padding for easier tapping
+                    .padding(.vertical, 12) // Increase tap margin
+                    .padding(.horizontal, 4) // Small horizontal padding
+                    .contentShape(Rectangle()) // Extend tap area to full width
             }
             
             Section(header: Text("Choose an Emoji")) {
