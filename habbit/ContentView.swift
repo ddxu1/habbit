@@ -21,12 +21,13 @@ var systemImage: String {
 struct ContentView: View {
 @Environment(\.managedObjectContext) private var viewContext
 @FetchRequest(
-    sortDescriptors: [NSSortDescriptor(keyPath: \Habit.name, ascending: true)],
+    sortDescriptors: [NSSortDescriptor(keyPath: \Habit.sortOrder, ascending: true), NSSortDescriptor(keyPath: \Habit.name, ascending: true)],
     animation: .default)
 private var habits: FetchedResults<Habit>
 
 @State private var showingAddHabit = false
 @State private var isDarkMode = false
+@State private var editMode: EditMode = .inactive
 
 var body: some View {
     NavigationView {
@@ -35,13 +36,25 @@ var body: some View {
                 HabitRowView(habit: habit)
             }
             .onDelete(perform: deleteHabits)
+            .onMove(perform: editMode == .active ? moveHabits : nil)
         }
+        .environment(\.editMode, $editMode)
         .navigationTitle("Habits")
         .preferredColorScheme(isDarkMode ? .dark : .light)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: { isDarkMode.toggle() }) {
-                    Image(systemName: isDarkMode ? "sun.max" : "moon")
+                HStack {
+                    Button(action: { isDarkMode.toggle() }) {
+                        Image(systemName: isDarkMode ? "sun.max" : "moon")
+                    }
+                    
+                    Button(action: {
+                        withAnimation {
+                            editMode = editMode == .active ? .inactive : .active
+                        }
+                    }) {
+                        Image(systemName: "line.3.horizontal")
+                    }
                 }
             }
             
@@ -64,6 +77,20 @@ private func deleteHabits(offsets: IndexSet) {
     }
 }
 
+private func moveHabits(from source: IndexSet, to destination: Int) {
+    withAnimation {
+        var habitsArray = Array(habits)
+        habitsArray.move(fromOffsets: source, toOffset: destination)
+        
+        // Update sort order for all habits
+        for (index, habit) in habitsArray.enumerated() {
+            habit.sortOrder = Int16(index)
+        }
+        
+        saveContext()
+    }
+}
+
 private func saveContext() {
     do {
         try viewContext.save()
@@ -77,6 +104,7 @@ private func saveContext() {
 struct HabitRowView: View {
 @ObservedObject var habit: Habit
 @Environment(\.managedObjectContext) private var viewContext
+@State private var showingEditSheet = false
 
 private var isCompletedToday: Bool {
     guard let completions = habit.completions as? Set<Completion> else { return false }
@@ -106,21 +134,21 @@ private var currentStreak: Int {
 }
 
 private var streakUnit: String {
-        let frequency = HabitFrequency(rawValue: habit.frequency ?? "Daily") ?? .daily
-        switch frequency {
-        case .daily, .weekdays:
-            return "day"
-        case .weekly:
-            return "week"
-        case .monthly:
-            return "month"
-        }
+    let frequency = HabitFrequency(rawValue: habit.frequency ?? "Daily") ?? .daily
+    switch frequency {
+    case .daily, .weekdays:
+        return "day"
+    case .weekly:
+        return "week"
+    case .monthly:
+        return "month"
     }
+}
 
 private var frequencyIcon: String {
-        let frequency = HabitFrequency(rawValue: habit.frequency ?? "Daily") ?? .daily
-        return frequency.systemImage
-    }
+    let frequency = HabitFrequency(rawValue: habit.frequency ?? "Daily") ?? .daily
+    return frequency.systemImage
+}
     
 private func shouldCountForStreak(date: Date, currentDate: Date, frequency: HabitFrequency) -> Bool {
     let calendar = Calendar.current
@@ -203,6 +231,12 @@ var body: some View {
         Spacer()
     }
     .contentShape(Rectangle())
+    .onLongPressGesture {
+        showingEditSheet = true
+    }
+    .sheet(isPresented: $showingEditSheet) {
+        EditHabitView(habit: habit)
+    }
 }
 
 private func toggleCompletion() {
@@ -342,11 +376,152 @@ private func saveHabit() {
     newHabit.emoji = selectedEmoji
     newHabit.createdDate = Date()
     
+    // Set sort order to be last
+    let request: NSFetchRequest<Habit> = Habit.fetchRequest()
+    let count = (try? viewContext.count(for: request)) ?? 0
+    newHabit.sortOrder = Int16(count)
+    
     do {
         try viewContext.save()
         dismiss()
     } catch {
         print("Save error: \(error)")
+    }
+}
+}
+
+// MARK: - Edit Habit View
+struct EditHabitView: View {
+@ObservedObject var habit: Habit
+@Environment(\.managedObjectContext) private var viewContext
+@Environment(\.dismiss) private var dismiss
+
+@State private var editedName: String
+@State private var editedFrequency: HabitFrequency
+@State private var editedEmoji: String
+
+private let emojis = ["📋", "💧", "🏃‍♂️", "📚", "💪", "🧘‍♂️", "🥗", "😴", "🚶‍♂️", "📱", "🎯", "✍️", "🎵", "🌱", "☀️", "🏠", "💼", "🎨", "🔥", "⭐"]
+
+init(habit: Habit) {
+    self.habit = habit
+    _editedName = State(initialValue: habit.name ?? "")
+    _editedFrequency = State(initialValue: HabitFrequency(rawValue: habit.frequency ?? "Daily") ?? .daily)
+    _editedEmoji = State(initialValue: habit.emoji ?? "📋")
+}
+
+var body: some View {
+    NavigationView {
+        Form {
+            Section(header: Text("Habit Details")) {
+                TextField("Habit Name", text: $editedName)
+            }
+            
+            Section(header: Text("Choose an Emoji")) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 16) {
+                    ForEach(emojis, id: \.self) { emoji in
+                        Text(emoji)
+                            .font(.title2)
+                            .frame(width: 44, height: 44)
+                            .background(editedEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
+                            .cornerRadius(8)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                editedEmoji = emoji
+                            }
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+            
+            Section(header: Text("Frequency")) {
+                ForEach(HabitFrequency.allCases, id: \.self) { frequency in
+                    HStack {
+                        Image(systemName: frequency.systemImage)
+                            .foregroundColor(.blue)
+                            .frame(width: 20)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(frequency.rawValue)
+                                .font(.body)
+                            
+                            Text(frequencyDescription(frequency))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        if editedFrequency == frequency {
+                            Image(systemName: "checkmark")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        editedFrequency = frequency
+                    }
+                }
+            }
+            
+            Section {
+                Button("Delete Habit", role: .destructive) {
+                    deleteHabit()
+                }
+            }
+        }
+        .navigationTitle("Edit Habit")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Cancel") {
+                    dismiss()
+                }
+            }
+            
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Save") {
+                    saveChanges()
+                }
+                .disabled(editedName.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+    }
+}
+
+private func frequencyDescription(_ frequency: HabitFrequency) -> String {
+    switch frequency {
+    case .daily:
+        return "Every single day"
+    case .weekly:
+        return "Once per week"
+    case .monthly:
+        return "Once per month"
+    case .weekdays:
+        return "Monday through Friday only"
+    }
+}
+
+private func saveChanges() {
+    habit.name = editedName.trimmingCharacters(in: .whitespaces)
+    habit.frequency = editedFrequency.rawValue
+    habit.emoji = editedEmoji
+    
+    do {
+        try viewContext.save()
+        dismiss()
+    } catch {
+        print("Save error: \(error)")
+    }
+}
+
+private func deleteHabit() {
+    viewContext.delete(habit)
+    
+    do {
+        try viewContext.save()
+        dismiss()
+    } catch {
+        print("Delete error: \(error)")
     }
 }
 }

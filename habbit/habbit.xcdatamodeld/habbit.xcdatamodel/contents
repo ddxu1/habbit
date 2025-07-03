@@ -9,6 +9,7 @@
         <attribute name="emoji" optional="YES" attributeType="String" defaultValueString="📋"/>
         <attribute name="frequency" optional="YES" attributeType="String" defaultValueString="Daily"/>
         <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="sortOrder" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <relationship name="completions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Completion" inverseName="habit" inverseEntity="Completion"/>
     </entity>
 </model>
