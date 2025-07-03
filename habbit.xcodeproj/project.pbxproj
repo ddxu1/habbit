@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1B86E27E2E161AEB007335B8 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1B86E27D2E161AEA007335B8 /* WidgetKit.framework */; };
+		1B86E2802E161AEB007335B8 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1B86E27F2E161AEB007335B8 /* SwiftUI.framework */; };
+		1B86E2912E161AEB007335B8 /* HabitWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1B86E27B2E161AEA007335B8 /* HabitWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		1B86E2532E160A11007335B8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,13 +27,47 @@
 			remoteGlobalIDString = 1B86E23E2E160A10007335B8;
 			remoteInfo = habbit;
 		};
+		1B86E28F2E161AEB007335B8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1B86E2372E160A10007335B8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1B86E27A2E161AEA007335B8;
+			remoteInfo = HabitWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		1B86E2962E161AEB007335B8 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				1B86E2912E161AEB007335B8 /* HabitWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		1B86E23F2E160A10007335B8 /* habbit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = habbit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1B86E2522E160A11007335B8 /* habbitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = habbitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1B86E25C2E160A11007335B8 /* habbitUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = habbitUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1B86E27B2E161AEA007335B8 /* HabitWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HabitWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		1B86E27D2E161AEA007335B8 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		1B86E27F2E161AEB007335B8 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1B86E2922E161AEB007335B8 /* Exceptions for "HabitWidget" folder in "HabitWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 1B86E27A2E161AEA007335B8 /* HabitWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1B86E2412E160A10007335B8 /* habbit */ = {
@@ -43,6 +83,14 @@
 		1B86E25F2E160A11007335B8 /* habbitUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = habbitUITests;
+			sourceTree = "<group>";
+		};
+		1B86E2812E161AEB007335B8 /* HabitWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				1B86E2922E161AEB007335B8 /* Exceptions for "HabitWidget" folder in "HabitWidgetExtension" target */,
+			);
+			path = HabitWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -69,6 +117,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1B86E2782E161AEA007335B8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1B86E2802E161AEB007335B8 /* SwiftUI.framework in Frameworks */,
+				1B86E27E2E161AEB007335B8 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -78,6 +135,8 @@
 				1B86E2412E160A10007335B8 /* habbit */,
 				1B86E2552E160A11007335B8 /* habbitTests */,
 				1B86E25F2E160A11007335B8 /* habbitUITests */,
+				1B86E2812E161AEB007335B8 /* HabitWidget */,
+				1B86E27C2E161AEA007335B8 /* Frameworks */,
 				1B86E2402E160A10007335B8 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,8 +147,18 @@
 				1B86E23F2E160A10007335B8 /* habbit.app */,
 				1B86E2522E160A11007335B8 /* habbitTests.xctest */,
 				1B86E25C2E160A11007335B8 /* habbitUITests.xctest */,
+				1B86E27B2E161AEA007335B8 /* HabitWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		1B86E27C2E161AEA007335B8 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1B86E27D2E161AEA007335B8 /* WidgetKit.framework */,
+				1B86E27F2E161AEB007335B8 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -102,10 +171,12 @@
 				1B86E23B2E160A10007335B8 /* Sources */,
 				1B86E23C2E160A10007335B8 /* Frameworks */,
 				1B86E23D2E160A10007335B8 /* Resources */,
+				1B86E2962E161AEB007335B8 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				1B86E2902E161AEB007335B8 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				1B86E2412E160A10007335B8 /* habbit */,
@@ -163,6 +234,28 @@
 			productReference = 1B86E25C2E160A11007335B8 /* habbitUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		1B86E27A2E161AEA007335B8 /* HabitWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1B86E2932E161AEB007335B8 /* Build configuration list for PBXNativeTarget "HabitWidgetExtension" */;
+			buildPhases = (
+				1B86E2772E161AEA007335B8 /* Sources */,
+				1B86E2782E161AEA007335B8 /* Frameworks */,
+				1B86E2792E161AEA007335B8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				1B86E2812E161AEB007335B8 /* HabitWidget */,
+			);
+			name = HabitWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = HabitWidgetExtension;
+			productReference = 1B86E27B2E161AEA007335B8 /* HabitWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -184,6 +277,9 @@
 						CreatedOnToolsVersion = 16.4;
 						TestTargetID = 1B86E23E2E160A10007335B8;
 					};
+					1B86E27A2E161AEA007335B8 = {
+						CreatedOnToolsVersion = 16.4;
+					};
 				};
 			};
 			buildConfigurationList = 1B86E23A2E160A10007335B8 /* Build configuration list for PBXProject "habbit" */;
@@ -203,6 +299,7 @@
 				1B86E23E2E160A10007335B8 /* habbit */,
 				1B86E2512E160A11007335B8 /* habbitTests */,
 				1B86E25B2E160A11007335B8 /* habbitUITests */,
+				1B86E27A2E161AEA007335B8 /* HabitWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -223,6 +320,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		1B86E25A2E160A11007335B8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1B86E2792E161AEA007335B8 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -253,6 +357,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1B86E2772E161AEA007335B8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -265,6 +376,11 @@
 			isa = PBXTargetDependency;
 			target = 1B86E23E2E160A10007335B8 /* habbit */;
 			targetProxy = 1B86E25D2E160A11007335B8 /* PBXContainerItemProxy */;
+		};
+		1B86E2902E161AEB007335B8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1B86E27A2E161AEA007335B8 /* HabitWidgetExtension */;
+			targetProxy = 1B86E28F2E161AEB007335B8 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -547,6 +663,65 @@
 			};
 			name = Release;
 		};
+		1B86E2942E161AEB007335B8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DTC82X4F5W;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HabitWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dx.habbit.HabitWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1B86E2952E161AEB007335B8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DTC82X4F5W;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HabitWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dx.habbit.HabitWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -582,6 +757,15 @@
 			buildConfigurations = (
 				1B86E26D2E160A11007335B8 /* Debug */,
 				1B86E26E2E160A11007335B8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1B86E2932E161AEB007335B8 /* Build configuration list for PBXNativeTarget "HabitWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1B86E2942E161AEB007335B8 /* Debug */,
+				1B86E2952E161AEB007335B8 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
