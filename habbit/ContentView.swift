@@ -329,8 +329,9 @@ struct AddHabitView: View {
 @State private var selectedEmoji = "📋"
 @State private var customEmoji = ""
 @State private var showingCustomEmojiInput = false
+@FocusState private var isCustomEmojiFieldFocused: Bool
 
-private let popularEmojis = ["📋", "💧", "🏃‍♂️", "📚", "💪", "🧘‍♂️", "🥗", "😴", "🚶‍♂️", "📱", "🎯", "✍️", "🎵", "🌱", "☀️", "🏠", "💼", "🎨", "🔥", "⭐"]
+private let popularEmojis = ["🏃‍♂️", "🧘‍♂️", "💪", "📚", "🥗", "😴"]
 
 var body: some View {
     NavigationView {
@@ -355,6 +356,7 @@ var body: some View {
                                     .contentShape(Rectangle())
                                     .onTapGesture {
                                         selectedEmoji = emoji
+                                        customEmoji = "" // Reset custom emoji when selecting pre-built
                                         showingCustomEmojiInput = false
                                     }
                             }
@@ -368,37 +370,12 @@ var body: some View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        Button(action: {
-                            showingCustomEmojiInput = true
-                            customEmoji = "" // Clear the field when starting fresh
-                        }) {
-                            HStack {
-                                Text(showingCustomEmojiInput && !customEmoji.isEmpty ? customEmoji : "😀")
-                                    .font(.title3)
-                                Text("Tap to choose")
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(showingCustomEmojiInput ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
-                            .cornerRadius(8)
-                        }
-                    }
-                    
-                    // Custom emoji text field (appears when button is tapped)
-                    if showingCustomEmojiInput {
-                        HStack {
-                            TextField("🎨", text: $customEmoji)
-                                .font(.title2)
-                                .multilineTextAlignment(.center)
-                                .frame(height: 44)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                                )
+                        ZStack {
+                            // Hidden text field that opens emoji keyboard
+                            TextField("", text: $customEmoji)
+                                .opacity(0)
+                                .frame(width: 1, height: 1)
+                                .focused($isCustomEmojiFieldFocused)
                                 .onChange(of: customEmoji) { _, newValue in
                                     // Validate and filter to only allow emojis, limit to 1
                                     let filtered = newValue.filter { $0.isEmoji }
@@ -411,15 +388,30 @@ var body: some View {
                                     }
                                     if !customEmoji.isEmpty {
                                         selectedEmoji = customEmoji
+                                        isCustomEmojiFieldFocused = false // Close keyboard after selection
                                     }
                                 }
                             
-                            Button("Clear") {
-                                customEmoji = ""
-                                showingCustomEmojiInput = false
+                            // Visible button
+                            Button(action: {
+                                customEmoji = "" // Clear for fresh input
+                                isCustomEmojiFieldFocused = true // Open emoji keyboard
+                            }) {
+                                HStack {
+                                    Text(!customEmoji.isEmpty ? customEmoji : "😀")
+                                        .font(.title3)
+                                    
+                                    if customEmoji.isEmpty {
+                                        Text("Tap to choose")
+                                            .font(.caption)
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(getCustomEmojiBackground())
+                                .cornerRadius(8)
                             }
-                            .font(.caption)
-                            .foregroundColor(.red)
                         }
                     }
                 }
@@ -488,6 +480,16 @@ private func frequencyDescription(_ frequency: HabitFrequency) -> String {
     }
 }
 
+private func getCustomEmojiBackground() -> Color {
+    if isCustomEmojiFieldFocused {
+        return Color.clear
+    } else if !customEmoji.isEmpty && selectedEmoji == customEmoji {
+        return Color.blue.opacity(0.2) // Blue background when custom emoji is selected
+    } else {
+        return Color.gray.opacity(0.1)
+    }
+}
+
 private func saveHabit() {
     let newHabit = Habit(context: viewContext)
     newHabit.name = habitName.trimmingCharacters(in: .whitespaces)
@@ -520,8 +522,9 @@ struct EditHabitView: View {
 @State private var editedEmoji: String
 @State private var customEmoji = ""
 @State private var showingCustomEmojiInput = false
+@FocusState private var isCustomEmojiFieldFocused: Bool
 
-private let popularEmojis = ["📋", "💧", "🏃‍♂️", "📚", "💪", "🧘‍♂️", "🥗", "😴", "🚶‍♂️", "📱", "🎯", "✍️", "🎵", "🌱", "☀️", "🏠", "💼", "🎨", "🔥", "⭐"]
+private let popularEmojis = ["🏃‍♂️", "🧘‍♂️", "💪", "📚", "🥗", "😴"]
 
 init(habit: Habit) {
     self.habit = habit
@@ -553,6 +556,7 @@ var body: some View {
                                     .contentShape(Rectangle())
                                     .onTapGesture {
                                         editedEmoji = emoji
+                                        customEmoji = "" // Reset custom emoji when selecting pre-built
                                         showingCustomEmojiInput = false
                                     }
                             }
@@ -566,37 +570,12 @@ var body: some View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        Button(action: {
-                            showingCustomEmojiInput = true
-                            customEmoji = "" // Clear the field when starting fresh
-                        }) {
-                            HStack {
-                                Text(showingCustomEmojiInput && !customEmoji.isEmpty ? customEmoji : "😀")
-                                    .font(.title3)
-                                Text("Tap to choose")
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(showingCustomEmojiInput ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
-                            .cornerRadius(8)
-                        }
-                    }
-                    
-                    // Custom emoji text field (appears when button is tapped)
-                    if showingCustomEmojiInput {
-                        HStack {
-                            TextField("🎨", text: $customEmoji)
-                                .font(.title2)
-                                .multilineTextAlignment(.center)
-                                .frame(height: 44)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                                )
+                        ZStack {
+                            // Hidden text field that opens emoji keyboard
+                            TextField("", text: $customEmoji)
+                                .opacity(0)
+                                .frame(width: 1, height: 1)
+                                .focused($isCustomEmojiFieldFocused)
                                 .onChange(of: customEmoji) { _, newValue in
                                     // Validate and filter to only allow emojis, limit to 1
                                     let filtered = newValue.filter { $0.isEmoji }
@@ -609,15 +588,30 @@ var body: some View {
                                     }
                                     if !customEmoji.isEmpty {
                                         editedEmoji = customEmoji
+                                        isCustomEmojiFieldFocused = false // Close keyboard after selection
                                     }
                                 }
                             
-                            Button("Clear") {
-                                customEmoji = ""
-                                showingCustomEmojiInput = false
+                            // Visible button
+                            Button(action: {
+                                customEmoji = "" // Clear for fresh input
+                                isCustomEmojiFieldFocused = true // Open emoji keyboard
+                            }) {
+                                HStack {
+                                    Text(!customEmoji.isEmpty ? customEmoji : "😀")
+                                        .font(.title3)
+                                    
+                                    if customEmoji.isEmpty {
+                                        Text("Tap to choose")
+                                            .font(.caption)
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(getCustomEmojiBackground())
+                                .cornerRadius(8)
                             }
-                            .font(.caption)
-                            .foregroundColor(.red)
                         }
                     }
                 }
@@ -702,6 +696,16 @@ private func saveChanges() {
         dismiss()
     } catch {
         print("Save error: \(error)")
+    }
+}
+
+private func getCustomEmojiBackground() -> Color {
+    if isCustomEmojiFieldFocused {
+        return Color.clear
+    } else if !customEmoji.isEmpty && editedEmoji == customEmoji {
+        return Color.blue.opacity(0.2) // Blue background when custom emoji is selected
+    } else {
+        return Color.gray.opacity(0.1)
     }
 }
 
