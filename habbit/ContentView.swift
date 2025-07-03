@@ -35,6 +35,7 @@ private var habits: FetchedResults<Habit>
 
 @State private var showingAddHabit = false
 @State private var showingHeatMap = false
+@State private var editingHabit: Habit? = nil
 @State private var isDarkMode = false
 @State private var editMode: EditMode = .inactive
 
@@ -91,8 +92,10 @@ var body: some View {
                 // Habit list
                 List {
                     ForEach(habits) { habit in
-                        HabitRowView(habit: habit)
-                            .listRowBackground(Color(red: 0.10, green: 0.14, blue: 0.22))
+                        HabitRowView(habit: habit) {
+                            editingHabit = habit
+                        }
+                        .listRowBackground(Color(red: 0.10, green: 0.14, blue: 0.22))
                     }
                     .onDelete(perform: deleteHabits)
                     .onMove(perform: editMode == .active ? moveHabits : nil)
@@ -109,6 +112,9 @@ var body: some View {
         }
         .sheet(isPresented: $showingHeatMap) {
             HeatMapView()
+        }
+        .sheet(item: $editingHabit) { habit in
+            EditHabitView(habit: habit)
         }
     }
 }
@@ -152,6 +158,7 @@ private func saveContext() {
 struct HabitRowView: View {
 @ObservedObject var habit: Habit
 @Environment(\.managedObjectContext) private var viewContext
+let onTap: () -> Void
 
 private var isCompletedToday: Bool {
     guard let completions = habit.completions as? Set<Completion> else { return false }
@@ -250,6 +257,7 @@ var body: some View {
                 .font(.title2)
         }
         
+        // Main content area - tappable for completion
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(habit.emoji ?? "📋")
@@ -276,10 +284,21 @@ var body: some View {
                 }
             }
         }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            toggleCompletion()
+        }
         
         Spacer()
+        
+        // Edit button - only the chevron is tappable for editing
+        Button(action: onTap) {
+            Image(systemName: "chevron.right")
+                .foregroundColor(.gray.opacity(0.6))
+                .font(.caption)
+                .padding(.leading, 8) // Extra padding for easier tapping
+        }
     }
-    .contentShape(Rectangle())
 }
 
 private func toggleCompletion() {
